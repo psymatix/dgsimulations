@@ -58,17 +58,25 @@ if (($handle = fopen($f, "r")) !== FALSE) {
       
         $row++;
         
-        if(($row > $startRow && $row < $endRow)){
+        if(($row > $startRow && $row < $endRow) && $data[9] != ""){
           
 	$nodename = substr($data[1], 0, strpos($data[1]," "));
+        if($case == 33 && (substr($data[1], 0, strpos($data[1]," ")) == "BUS") ){
+            $nodename = "B" . substr($data[1], 4, 1); // convert BUS 2 .. to B2
+                       
+        }
+        
         $nodeNum = ($case == 14) ? (substr($nodename, 4)) : (substr($nodename, 1)); //BUS_X for 14, BX FOR 33
         $nodeNum = $nodeNum + 0; 
         $nodeVoltagePU = $data[10];
         $nodeVoltageKV = $data[11];
         
-             if(in_array($nodeNum, $InterestBuses)){
+             if(in_array($nodeNum, $InterestBuses) && $case == 14){
                  //only store data for buses we are interested in
                 $dgref[ $nodeNum ] = array($nodeVoltagePU + 0, $nodeVoltageKV + 0); // +0 to make float
+             }else{
+                 //read all for 33 bus
+                 $dgref[ $nodeNum ] = array($nodeVoltagePU + 0, $nodeVoltageKV + 0); // +0 to make float
              }
        
         }// if row > start row
@@ -118,6 +126,7 @@ function display(){
     global $InterestBuses;
     global $folders;
     global $output;
+    global $case;
     
  foreach($InterestBuses as $k=>$bus){
    echo "<h2>DG at Bus " . $bus . "</h2>";
@@ -144,7 +153,20 @@ function display(){
     $html .= '</tr>'
             . '</thead>'
             . '<tbody>';
-    foreach($InterestBuses as $kk => $bb){
+    //
+    
+    if($case == 14){ 
+        $loopBuses = $InterestBuses;
+    }elseif($case == 33){
+        //
+         $loopBuses = array();
+        for($i = 1; $i<34; $i++){
+            array_push($loopBuses, $i);
+        }
+    }
+    
+    
+    foreach($loopBuses as $kk => $bb){
         $html .= '<tr>';
         $html .= '<td>' . $bb . '</td>'; //bus number as row leader
         
@@ -160,7 +182,7 @@ function display(){
             
         $html .= '</tr>';
     }
-     
+ 
     $html .= '</tbody>'
             . '</table>';
     
